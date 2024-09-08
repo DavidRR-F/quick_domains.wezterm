@@ -38,7 +38,6 @@ local function get_domains(opts)
 
   for _, domain in ipairs(all_domains) do
     local name = domain:name()
-    local id = tostring(domain:domain_id())
     local label = domain:label()
     local icon = ''
     for domain_type, icon_key in pairs(opts.icons) do
@@ -51,7 +50,7 @@ local function get_domains(opts)
     if name ~= "TermWizTerminalDomain" then
       table.insert(domains, {
         label = icon .. ' ' .. name,
-        id = id,
+        id = name,
       })
     end
   end
