@@ -48,6 +48,8 @@ local function fuzzy_attach_to_domain(opts)
               act.AttachDomain(id),
               pane
             )
+            window:perform_action(act.SetPaneSize { 'Rows', 1000 }, pane)
+            window:perform_action(act.SetPaneSize { 'Columns', 1000 }, pane)
           end
         end),
         title = "Choose SSH Host",
