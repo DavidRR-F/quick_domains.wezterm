@@ -14,42 +14,63 @@ local default_settings = {
   icons = {
     hosts = '',
     ssh = '󰣀',
+    tls = '󰢭',
+    unix = '',
+    bash = '',
+    zsh = '',
+    fish = '',
+    pwsh = '󰨊',
+    powershell = '󰨊',
+    wsl = '',
+    windows = '',
+    docker = '',
+    kubernetes = '󱃾',
   }
 }
 
-local function get_ssh_domains(opts)
-  local ssh = {}
-
-  for host, _ in pairs(wez.enumerate_ssh_hosts()) do
-    table.insert(ssh, {
-      label = opts.icons.ssh .. ' ' .. host,
-      id = host,
-    })
-  end
-
-  return ssh
+local function contains_ignore_case(str, pattern)
+  return string.find(string.lower(str), string.lower(pattern)) ~= nil
 end
 
-local function get_choices(opts)
-  -- for later to concat other domain tables
-  local sessions = get_ssh_domains(opts)
-  return sessions
+local function get_domains(opts)
+  local domains = {}
+  local all_domains = wez.mux.all_domains()
+
+  for _, domain in ipairs(all_domains) do
+    local name = domain:name()
+    local id = tostring(domain:domain_id())
+    local label = domain:label()
+    local icon = ''
+    for domain_type, icon_key in pairs(opts.icons) do
+      if contains_ignore_case(label, domain_type) then
+        icon = icon_key
+        break
+      end
+    end
+
+    if name ~= "TermWizTerminalDomain" then
+      table.insert(domains, {
+        label = icon .. ' ' .. name,
+        id = id,
+      })
+    end
+  end
+
+  return domains
 end
 
 local function fuzzy_attach_to_domain(opts)
   return wez.action_callback(function(window, pane)
-    local choices = get_choices(opts)
+    local choices = get_domains(opts)
 
     window:perform_action(
       act.InputSelector({
         action = wez.action_callback(function(window, pane, id, label)
           if id then
             window:perform_action(
-              act.AttachDomain(id),
+              act.SpawnCommandInNewTab { domain = { DomainName = id } },
               pane
             )
-            window:perform_action(act.SetPaneSize { 'Rows', 1000 }, pane)
-            window:perform_action(act.SetPaneSize { 'Columns', 1000 }, pane)
           end
         end),
         title = "Choose SSH Host",
