@@ -4,6 +4,8 @@ A fast wezterm ssh domain finder to quickly attach to your defined ssh sessions
 
 ## Quick Look
 
+![Peek 2024-09-08 17-07](https://github.com/user-attachments/assets/747bb423-a277-4273-b80d-65d94ce2e873)
+
 ### Dependencies
 
 There are no package dependencies but this plugin does assume you have configured a 
