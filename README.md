@@ -1,33 +1,17 @@
-# Quick Domains
+# ⚡ Quick Domains
 
-A fast wezterm ssh domain finder to quickly attach to your defined ssh sessions
+A faster way to search and attach to domains in wezterm
 
 ## Quick Look
 
 ![Peek 2024-09-08 17-07](https://github.com/user-attachments/assets/747bb423-a277-4273-b80d-65d94ce2e873)
 
-### Dependencies
+#### Dependencies
 
-There are no package dependencies but this plugin does assume you have configured a 
-`.ssh/config` as defined in the [WezTerm](https://wezfurlong.org/wezterm/config/lua/wezterm/enumerate_ssh_hosts.html) documentation
+There are no package dependencies, but you need to configured your
+`.ssh/config` [Here](https://wezfurlong.org/wezterm/config/lua/wezterm/enumerate_ssh_hosts.html) or configure your ssh domains [Here](https://wezfurlong.org/wezterm/config/lua/SshDomain.html) to select ssh domains with this plugin.
 
-```bash
-Host aur.archlinux.org
-  IdentityFile ~/.ssh/aur
-  User aur
-
-Host 192.168.1.*
-  ForwardAgent yes
-  ForwardX11 yes
-
-Host woot
-  User someone
-  Hostname localhost
-```
-
-### Setup
-
-#### Install
+### 🚀 Install
 
 This is a wezterm plugin. It can be installed by importing the repo and calling the `apply_to_config` function. It is important that the `apply_to_config` function is called after keys and key_tables have been set.
 ```lua 
@@ -35,7 +19,7 @@ local domains = wezterm.plugin.require("https://github.com/DavidRR-F/quick_domai
 domains.apply_to_config(config)
 ```
 
-#### Configure
+### 🎨 Configuration
 
 The `apply_to_config` function takes a second param opts. To override any options simply pass a table of the desired changes.
 
@@ -45,8 +29,8 @@ domains.apply_to_config(
   {
     keys = {
       attach = {
-        key  = 'd',
-        mods = '',
+        key  = 's',
+        mods = 'SHIFT',
         tbl  = 'tmux'
       }
     }
@@ -54,7 +38,7 @@ domains.apply_to_config(
 )
 ```
 
-##### Defaults
+### Defaults
 
 ```lua 
 {
@@ -68,11 +52,21 @@ domains.apply_to_config(
       tbl = '',
     }
   },
+  -- swap in and out icons for specific domains
   icons = {
-    -- title icon
     hosts = '',
-    -- ssh domain icons
     ssh = '󰣀',
+    tls = '󰢭',
+    unix = '',
+    bash = '',
+    zsh = '',
+    fish = '',
+    pwsh = '󰨊',
+    powershell = '󰨊',
+    wsl = '',
+    windows = '',
+    docker = '',
+    kubernetes = '󱃾',
   }
 }
 
