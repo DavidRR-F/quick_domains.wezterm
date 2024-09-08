@@ -27,7 +27,7 @@ Host woot
 
 #### Install
 
-This is a wezterm plugin. It can be installed by importing the repo and calling the apply_to_config-function. It is important that the apply_to_config-function is called after keys and key_tables have been set.
+This is a wezterm plugin. It can be installed by importing the repo and calling the `apply_to_config` function. It is important that the `apply_to_config` function is called after keys and key_tables have been set.
 ```lua 
 local domains = wezterm.plugin.require("https://github.com/DavidRR-F/quick_domains.wezterm")
 domains.apply_to_config(config)
@@ -35,7 +35,7 @@ domains.apply_to_config(config)
 
 #### Configure
 
-The apply_to_config-function takes a second param opts. To override any options simply pass a table of the desired changes.
+The `apply_to_config` function takes a second param opts. To override any options simply pass a table of the desired changes.
 
 ```lua
 domains.apply_to_config(
@@ -44,8 +44,8 @@ domains.apply_to_config(
     keys = {
       attach = {
         key  = 'd',
-        mods = 'CTRL',
-        tbl  = ''
+        mods = '',
+        tbl  = 'tmux'
       }
     }
   }
