@@ -38,7 +38,9 @@ domains.apply_to_config(
 )
 ```
 
-### Defaults
+### 🛠️ Defaults
+
+These are the current default setting the can be overridden on your `apply_to_config` function
 
 ```lua 
 {
