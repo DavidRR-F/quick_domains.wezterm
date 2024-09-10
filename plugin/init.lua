@@ -1,7 +1,11 @@
 local wez = require "wezterm"
 local act = wez.action
 
-local pub = {}
+local pub = {
+  formatter = function(icon, name, _)
+    return wez.format({ { Text = icon .. ' ' .. name } })
+  end,
+}
 
 local default_settings = {
   keys = {
@@ -49,7 +53,7 @@ local function get_domains(opts)
 
     if name ~= "TermWizTerminalDomain" then
       table.insert(domains, {
-        label = icon .. ' ' .. name,
+        label = pub.formatter(icon, name, label),
         id = name,
       })
     end
