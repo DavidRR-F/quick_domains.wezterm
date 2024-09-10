@@ -21,7 +21,7 @@ domains.apply_to_config(config)
 
 ### 🎨 Configuration
 
-The `apply_to_config` function takes a second param opts. To override any options simply pass a table of the desired changes.
+The `apply_to_config` function takes a second parameter opts. To override any options simply pass a table of the desired changes.
 
 ```lua
 domains.apply_to_config(
@@ -36,6 +36,19 @@ domains.apply_to_config(
     }
   }
 )
+```
+
+You can set a custom [wezterm format](https://wezfurlong.org/wezterm/config/lua/wezterm/format.html) for the domain fuzzy selector items 
+
+```lua 
+domains.formatter = function(icon, name, label)
+  return wezterm.format({
+    { Attribute = { Italic = true } },
+    { Foreground = { AnsiColor = 'Fuchsia' } },
+    { Background = { Color = 'blue' } },
+    { Text = icon .. ' ' .. name .. ': ' .. label },
+  })
+end
 ```
 
 ### 🛠️ Defaults
@@ -71,9 +84,15 @@ These are the current default setting the can be overridden on your `apply_to_co
     kubernetes = '󱃾',
   }
 }
-
 ```
 
+This is the current default formatter function that can be overridden 
+
+```lua 
+domains.formatter = function(icon, name, _)
+    return wezterm.format({ { Text = icon .. ' ' .. name } })
+end
+```
 ### 🔔 Events
 
 `quick_domain.fuzzy_selector.opened`
