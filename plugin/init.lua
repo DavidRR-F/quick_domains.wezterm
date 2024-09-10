@@ -58,18 +58,29 @@ local function get_domains(opts)
   return domains
 end
 
-local function fuzzy_attach_to_domain(opts)
+local function get_action(domain, action)
+  local actions = {
+    attach = act.SpawnCommandInNewTab { domain = { DomainName = domain } },
+  }
+
+  return actions[action]
+end
+
+local function fuzzy_attach_to_domain(opts, action)
   return wez.action_callback(function(window, pane)
     local choices = get_domains(opts)
-
+    wez.emit('quick_domain.fuzzy_selector.opened', window, pane, action)
     window:perform_action(
       act.InputSelector({
         action = wez.action_callback(function(window, pane, id, label)
           if id then
             window:perform_action(
-              act.SpawnCommandInNewTab { domain = { DomainName = id } },
+              get_action(id, action),
               pane
             )
+            wez.emit('quick_domain.fuzzy_selector.selected', window, pane, action, id)
+          else
+            wez.emit('quick_domain.fuzzy_selector.canceled', window, pane, action)
           end
         end),
         title = "Choose SSH Host",
@@ -85,22 +96,15 @@ end
 
 function pub.apply_to_config(config, user_settings)
   local opts = setmetatable(user_settings or {}, { __index = default_settings })
-  local keys = {
-    {
-      key = opts.keys.attach.key,
-      mods = opts.keys.attach.mods,
-      tbl = opts.keys.attach.tbl,
-      action = fuzzy_attach_to_domain(opts)
-    },
-  }
-  for _, key in ipairs(keys) do
+  for name, key in pairs(opts.keys) do
     if key.tbl ~= '' then
       config.key_tables = config.key_tables or {}
       config.key_tables[key.tbl] = config.key_tables[key.tbl] or {}
-      table.insert(config.key_tables[key.tbl], { key = key.key, mods = key.mods, action = key.action })
+      table.insert(config.key_tables[key.tbl],
+        { key = key.key, mods = key.mods, action = fuzzy_attach_to_domain(opts, name) })
     else
       config.keys = config.keys or {}
-      table.insert(config.keys, { key = key.key, mods = key.mods, action = key.action })
+      table.insert(config.keys, { key = key.key, mods = key.mods, action = fuzzy_attach_to_domain(opts, name) })
     end
   end
 end

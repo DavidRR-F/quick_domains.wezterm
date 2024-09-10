@@ -73,3 +73,30 @@ These are the current default setting the can be overridden on your `apply_to_co
 }
 
 ```
+
+### 🔔 Events
+
+`quick_domain.fuzzy_selector.opened`
+
+| parameter | description |
+|:----------|:------------|
+| window    | MuxWindow Object |
+| pane      | MuxPane Object   |
+| action    | Key name that triggered event |
+
+`quick_domain.fuzzy_selector.selected`
+
+| parameter | description |
+|:----------|:------------|
+| window    | MuxWindow Object |
+| pane      | MuxPane Object   |
+| action    | Key name that triggered event |
+| id        | Domain ID |
+
+`quick_domain.fuzzy_selector.canceled`
+
+| parameter | description |
+|:----------|:------------|
+| window    | MuxWindow Object |
+| pane      | MuxPane Object   |
+| action    | Key name that triggered event |
