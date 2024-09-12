@@ -13,7 +13,17 @@ local default_settings = {
       mods = 'CTRL',
       key = 'd',
       tbl = '',
-    }
+    },
+    vsplit = {
+      mods = 'CTRL',
+      key = 'v',
+      tbl = '',
+    },
+    hsplit = {
+      mods = 'CTRL',
+      key = 'h',
+      tbl = '',
+    },
   },
   icons = {
     hosts = '',
@@ -36,9 +46,33 @@ local function contains_ignore_case(str, pattern)
   return string.find(string.lower(str), string.lower(pattern)) ~= nil
 end
 
-local function get_domains(opts)
+local function is_remote_domain(domain)
+  local remote_domains = { 'ssh', 'tls', 'unix', 'docker', 'kubernetes' }
+  for _, domain_type in ipairs(remote_domains) do
+    if contains_ignore_case(domain:label(), domain_type) then
+      return true
+    end
+  end
+  return false
+end
+
+local function filter_remote_domains(domains)
+  local filtered = {}
+  for _, domain in ipairs(domains) do
+    if not is_remote_domain(domain) then
+      table.insert(filtered, domain)
+    end
+  end
+  return filtered
+end
+
+local function get_domains(opts, action)
   local domains = {}
   local all_domains = wez.mux.all_domains()
+
+  if action ~= 'attach' then
+    all_domains = filter_remote_domains(all_domains)
+  end
 
   for _, domain in ipairs(all_domains) do
     local name = domain:name()
@@ -65,6 +99,8 @@ end
 local function get_action(domain, action)
   local actions = {
     attach = act.SpawnCommandInNewTab { domain = { DomainName = domain } },
+    vsplit = act.SplitVertical { domain = { DomainName = domain } },
+    hsplit = act.SplitHorizontal { domain = { DomainName = domain } },
   }
 
   return actions[action]
@@ -72,24 +108,24 @@ end
 
 local function fuzzy_attach_to_domain(opts, action)
   return wez.action_callback(function(window, pane)
-    local choices = get_domains(opts)
+    local choices = get_domains(opts, action)
     wez.emit('quick_domain.fuzzy_selector.opened', window, pane, action)
     window:perform_action(
       act.InputSelector({
-        action = wez.action_callback(function(window, pane, id, label)
+        action = wez.action_callback(function(inner_window, inner_pane, id, label)
           if id then
-            window:perform_action(
+            inner_window:perform_action(
               get_action(id, action),
-              pane
+              inner_pane
             )
             wez.emit('quick_domain.fuzzy_selector.selected', window, pane, action, id)
           else
             wez.emit('quick_domain.fuzzy_selector.canceled', window, pane, action)
           end
         end),
-        title = "Choose SSH Host",
+        title = "Choose Domain",
         description = "Select a host and press Enter = accept, Esc = cancel, / = filter",
-        fuzzy_description = opts.icons.hosts .. " " .. "Hosts: ",
+        fuzzy_description = opts.icons.hosts .. " " .. "Domains: ",
         choices = choices,
         fuzzy = true,
       }),
