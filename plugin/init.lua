@@ -112,11 +112,11 @@ local function fuzzy_attach_to_domain(opts, action)
     wez.emit('quick_domain.fuzzy_selector.opened', window, pane, action)
     window:perform_action(
       act.InputSelector({
-        action = wez.action_callback(function(window, pane, id, label)
+        action = wez.action_callback(function(inner_window, inner_pane, id, label)
           if id then
-            window:perform_action(
+            inner_window:perform_action(
               get_action(id, action),
-              pane
+              inner_pane
             )
             wez.emit('quick_domain.fuzzy_selector.selected', window, pane, action, id)
           else

@@ -32,6 +32,16 @@ domains.apply_to_config(
         key  = 's',
         mods = 'SHIFT',
         tbl  = 'tmux'
+      },
+      vsplit = {
+        key  = 'v',
+        mods = 'SHIFT',
+        tbl  = 'tmux'
+      },
+      hsplit = {
+        key  = 'h',
+        mods = 'SHIFT',
+        tbl  = 'tmux'
       }
     }
   }
@@ -58,6 +68,7 @@ These are the current default setting the can be overridden on your `apply_to_co
 ```lua 
 {
   keys = {
+    -- open domain in new tab
     attach = {
       -- mod keys for fuzzy domain finder
       mods = 'CTRL',
@@ -65,8 +76,20 @@ These are the current default setting the can be overridden on your `apply_to_co
       key = 'd',
       -- key table to insert key map to if any
       tbl = '',
+    },
+    -- open domain in split pane 
+    -- excludes remote domains
+    vsplit = {
+      key  = 'v',
+      mods = 'CTRL',
+      tbl  = ''
+    },
+    hsplit = {
+      key  = 'h',
+      mods = 'CTRL',
+      tbl  = ''
     }
-  },
+ },
   -- swap in and out icons for specific domains
   icons = {
     hosts = '',
