@@ -61,6 +61,39 @@ domains.formatter = function(icon, name, label)
 end
 ```
 
+Additionally you can expand on the [ssh domain](https://wezfurlong.org/wezterm/config/lua/wezterm/enumerate_ssh_hosts.html) documentation to create [exec domains](https://wezfurlong.org/wezterm/config/lua/ExecDomain.html?h=exec)
+for your ssh hosts to enable pane splitting into them
+
+```lua
+local wezterm = require 'wezterm'
+
+local ssh_domains = {}
+local exec_domains = {}
+
+for host, config in pairs(wezterm.enumerate_ssh_hosts()) do
+ 
+  -- ssh config
+    ...
+
+  -- exec ssh config      
+  table.insert(exec_domains, 
+    wezterm.exec_domain(
+        "exec: " .. host,
+        function(cmd)
+            cmd.args = { "ssh", config.user .. "@" .. config.hostname }
+            return cmd
+        end
+    )
+  )
+end
+
+return {
+  ssh_domains = ssh_domains,
+  exec_domains = exec_domains,
+}
+```
+```
+
 ### 🛠️ Defaults
 
 These are the current default setting the can be overridden on your `apply_to_config` function
@@ -79,6 +112,7 @@ These are the current default setting the can be overridden on your `apply_to_co
     },
     -- open domain in split pane 
     -- excludes remote domains
+    -- add remote domains as exec domain for split binds
     vsplit = {
       key  = 'v',
       mods = 'CTRL',
