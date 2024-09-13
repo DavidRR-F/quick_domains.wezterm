@@ -1,4 +1,5 @@
 local wez = require "wezterm"
+local domains = require 'domains'
 local act = wez.action
 
 local pub = {
@@ -40,7 +41,15 @@ local default_settings = {
     windows = '',
     docker = '',
     kubernetes = '󱃾',
-  }
+  },
+  ssh_ignore = true,
+  exec_ignore = {
+    ssh = true,
+    docker = true,
+    kubernetes = true,
+  },
+  kubernetes_shell = '/bin/bash',
+  docker_shell = '/bin/bash',
 }
 
 local function contains_ignore_case(str, pattern)
@@ -185,8 +194,25 @@ local function fuzzy_attach_hsplit(opts)
   end)
 end
 
+local function all_true(tbl)
+  for _, value in ipairs(tbl) do
+    if not value then
+      return false
+    end
+  end
+  return true
+end
+
 function pub.apply_to_config(config, user_settings)
   local opts = setmetatable(user_settings or {}, { __index = default_settings })
+
+  if not opts.ssh_ignore then
+    config.ssh_domains = domains.compute_ssh_domains()
+  end
+
+  if not all_true(opts.exec_ignore) then
+    config.exec_domains = domains.compute_exec_domains(opts)
+  end
 
   local actions = {
     attach = fuzzy_attach_tab(opts),
