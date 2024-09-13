@@ -92,7 +92,6 @@ return {
   exec_domains = exec_domains,
 }
 ```
-```
 
 ### 🛠️ Defaults
 
