@@ -1,8 +1,8 @@
 local wez = require "wezterm"
 
-local is_windows = wezterm.target_triple == 'x86_64-pc-windows-msvc'
+local is_windows = wez.target_triple == 'x86_64-pc-windows-msvc'
 local separator = is_windows and '\\' or '/'
-local plugin_dir = wezterm.config_dir .. separator .. 'plugins'
+local plugin_dir = wez.config_dir .. separator .. 'plugins'
 package.path = package.path .. ';' .. plugin_dir .. separator .. '?.lua'
 
 local domains = require 'domains'
