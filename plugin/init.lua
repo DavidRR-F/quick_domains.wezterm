@@ -2,14 +2,14 @@ local wez = require "wezterm"
 local domains = require 'domains'
 local act = wez.action
 
-local is_windows = wezterm.target_triple == 'x86_64-pc-windows-msvc'
+local is_windows = wez.target_triple == 'x86_64-pc-windows-msvc'
 local separator = is_windows and '\\' or '/'
 
-local plugin_dir = wezterm.plugin.list()[1].plugin_dir:gsub(separator .. '[^' .. separator .. ']*$', '')
+local plugin_dir = wez.plugin.list()[1].plugin_dir:gsub(separator .. '[^' .. separator .. ']*$', '')
 
 --- Checks if the plugin directory exists
 local function directory_exists(path)
-  local success, result = pcall(wezterm.read_dir, plugin_dir .. path)
+  local success, result = pcall(wez.read_dir, plugin_dir .. path)
   return success and result
 end
 
