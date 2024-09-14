@@ -42,11 +42,13 @@ local default_settings = {
     docker = '',
     kubernetes = '󱃾',
   },
-  ssh_ignore = true,
-  exec_ignore = {
-    ssh = true,
-    docker = true,
-    kubernetes = true,
+  auto = {
+    ssh_ignore = true,
+    exec_ignore = {
+      ssh = true,
+      docker = true,
+      kubernetes = true,
+    }
   },
   kubernetes_shell = '/bin/bash',
   docker_shell = '/bin/bash',
@@ -195,7 +197,7 @@ local function fuzzy_attach_hsplit(opts)
 end
 
 local function all_true(tbl)
-  for _, value in ipairs(tbl) do
+  for _, value in pairs(tbl) do
     if not value then
       return false
     end
@@ -203,14 +205,29 @@ local function all_true(tbl)
   return true
 end
 
-function pub.apply_to_config(config, user_settings)
-  local opts = setmetatable(user_settings or {}, { __index = default_settings })
+local function deep_setmetatable(user, default)
+  user = user or {}
+  for k, v in pairs(default) do
+    if type(v) == "table" then
+      user[k] = deep_setmetatable(user[k], v)
+    else
+      if user[k] == nil then
+        user[k] = v
+      end
+    end
+  end
 
-  if not opts.ssh_ignore then
+  return user
+end
+
+function pub.apply_to_config(config, user_settings)
+  local opts = deep_setmetatable(user_settings or {}, default_settings)
+
+  if not opts.auto.ssh_ignore then
     config.ssh_domains = domains.compute_ssh_domains()
   end
 
-  if not all_true(opts.exec_ignore) then
+  if not all_true(opts.auto.exec_ignore) then
     config.exec_domains = domains.compute_exec_domains(opts)
   end
 

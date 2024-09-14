@@ -114,7 +114,7 @@ end
 
 function M.compute_exec_domains(opts)
   local exec_domains = {}
-  if not opts.exec_ignore.docker then
+  if not opts.auto.exec_ignore.docker then
     for id, name in pairs(docker_list()) do
       table.insert(
         exec_domains,
@@ -126,7 +126,7 @@ function M.compute_exec_domains(opts)
       )
     end
   end
-  if not opts.exec_ignore.kubernetes then
+  if not opts.auto.exec_ignore.kubernetes then
     for id, name in pairs(kubernetes_pod_list()) do
       table.insert(
         exec_domains,
@@ -138,13 +138,13 @@ function M.compute_exec_domains(opts)
       )
     end
   end
-  if not opts.exec_ignore.ssh then
-    for host, config in pairs(wez.enumerate_ssh_hosts()) do
+  if not opts.auto.exec_ignore.ssh then
+    for host, _ in pairs(wez.enumerate_ssh_hosts()) do
       table.insert(exec_domains,
         wez.exec_domain(
           "ssh:" .. host,
           function(cmd)
-            cmd.args = { "ssh", config.user .. "@" .. config.hostname }
+            cmd.args = { "ssh", host }
             return cmd
           end
         )
