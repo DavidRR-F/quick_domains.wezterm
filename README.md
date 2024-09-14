@@ -4,7 +4,7 @@ A faster way to search and attach to domains in wezterm. Inspired by [smart_work
 
 ## Quick Look
 
-![Peek 2024-09-08 17-07](https://github.com/user-attachments/assets/747bb423-a277-4273-b80d-65d94ce2e873)
+![Peek 2024-09-14 06-44](https://github.com/user-attachments/assets/79070918-25fa-47bf-8d8f-35f776c1edfc)
 
 #### Dependencies
 
@@ -61,7 +61,7 @@ domains.formatter = function(icon, name, label)
 end
 ```
 
-You can enable auto configuration of [ssh_domains]() and [exec_domains]() by disabling the ignore configurations
+You can enable auto configuration of [ssh_domains](https://wezfurlong.org/wezterm/config/lua/wezterm/enumerate_ssh_hosts.html?h=ssh) and [exec_domains](https://wezfurlong.org/wezterm/config/lua/ExecDomain.html#example-docker-domains) by disabling the ignore configurations
 
 ```lua 
 {
