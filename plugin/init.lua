@@ -1,4 +1,5 @@
 local wez = require "wezterm"
+local domains = require 'domains'
 local act = wez.action
 
 local pub = {
@@ -29,6 +30,7 @@ local default_settings = {
     hosts = '',
     ssh = '󰣀',
     tls = '󰢭',
+    exec = '',
     unix = '',
     bash = '',
     zsh = '',
@@ -39,7 +41,17 @@ local default_settings = {
     windows = '',
     docker = '',
     kubernetes = '󱃾',
-  }
+  },
+  auto = {
+    ssh_ignore = true,
+    exec_ignore = {
+      ssh = true,
+      docker = true,
+      kubernetes = true,
+    }
+  },
+  kubernetes_shell = '/bin/bash',
+  docker_shell = '/bin/bash',
 }
 
 local function contains_ignore_case(str, pattern)
@@ -47,7 +59,7 @@ local function contains_ignore_case(str, pattern)
 end
 
 local function is_remote_domain(domain)
-  local remote_domains = { 'ssh', 'tls', 'unix', 'docker', 'kubernetes' }
+  local remote_domains = { 'ssh mux', 'tls mux', 'unix mux' }
   for _, domain_type in ipairs(remote_domains) do
     if contains_ignore_case(domain:label(), domain_type) then
       return true
@@ -66,18 +78,12 @@ local function filter_remote_domains(domains)
   return filtered
 end
 
-local function get_domains(opts, action)
-  local domains = {}
-  local all_domains = wez.mux.all_domains()
-
-  if action ~= 'attach' then
-    all_domains = filter_remote_domains(all_domains)
-  end
-
-  for _, domain in ipairs(all_domains) do
+local function get_choices(domains, opts)
+  local choices = {}
+  for _, domain in ipairs(domains) do
     local name = domain:name()
     local label = domain:label()
-    local icon = ''
+    local icon = ''
     for domain_type, icon_key in pairs(opts.icons) do
       if contains_ignore_case(label, domain_type) then
         icon = icon_key
@@ -86,41 +92,41 @@ local function get_domains(opts, action)
     end
 
     if name ~= "TermWizTerminalDomain" then
-      table.insert(domains, {
+      table.insert(choices, {
         label = pub.formatter(icon, name, label),
         id = name,
       })
     end
   end
-
-  return domains
+  return choices
 end
 
-local function get_action(domain, action)
-  local actions = {
-    attach = act.SpawnCommandInNewTab { domain = { DomainName = domain } },
-    vsplit = act.SplitVertical { domain = { DomainName = domain } },
-    hsplit = act.SplitHorizontal { domain = { DomainName = domain } },
-  }
-
-  return actions[action]
+local function get_local_domains(opts)
+  local all_domains = wez.mux.all_domains()
+  all_domains = filter_remote_domains(all_domains)
+  return get_choices(all_domains, opts)
 end
 
-local function fuzzy_attach_to_domain(opts, action)
+local function get_all_domains(opts)
+  local all_domains = wez.mux.all_domains()
+  return get_choices(all_domains, opts)
+end
+
+local function fuzzy_attach_tab(opts)
   return wez.action_callback(function(window, pane)
-    local choices = get_domains(opts, action)
-    wez.emit('quick_domain.fuzzy_selector.opened', window, pane, action)
+    local choices = get_all_domains(opts)
+    wez.emit('quick_domain.fuzzy_selector.opened', window, pane)
     window:perform_action(
       act.InputSelector({
-        action = wez.action_callback(function(inner_window, inner_pane, id, label)
+        action = wez.action_callback(function(inner_window, inner_pane, id, _)
           if id then
             inner_window:perform_action(
-              get_action(id, action),
+              act.SpawnCommandInNewTab { domain = { DomainName = id } },
               inner_pane
             )
-            wez.emit('quick_domain.fuzzy_selector.selected', window, pane, action, id)
+            wez.emit('quick_domain.fuzzy_selector.selected', window, pane, id)
           else
-            wez.emit('quick_domain.fuzzy_selector.canceled', window, pane, action)
+            wez.emit('quick_domain.fuzzy_selector.canceled', window, pane)
           end
         end),
         title = "Choose Domain",
@@ -134,17 +140,112 @@ local function fuzzy_attach_to_domain(opts, action)
   end)
 end
 
+local function fuzzy_attach_vsplit(opts)
+  return wez.action_callback(function(window, pane)
+    local choices = get_local_domains(opts)
+    wez.emit('quick_domain.fuzzy_selector.opened', window, pane)
+    window:perform_action(
+      act.InputSelector({
+        action = wez.action_callback(function(inner_window, inner_pane, id, _)
+          if id then
+            inner_window:perform_action(
+              act.SplitVertical { domain = { DomainName = id } },
+              inner_pane
+            )
+            wez.emit('quick_domain.fuzzy_selector.selected', window, pane, id)
+          else
+            wez.emit('quick_domain.fuzzy_selector.canceled', window, pane)
+          end
+        end),
+        title = "Choose Domain",
+        description = "Select a host and press Enter = accept, Esc = cancel, / = filter",
+        fuzzy_description = opts.icons.hosts .. " " .. "Domains: ",
+        choices = choices,
+        fuzzy = true,
+      }),
+      pane
+    )
+  end)
+end
+
+local function fuzzy_attach_hsplit(opts)
+  return wez.action_callback(function(window, pane)
+    local choices = get_local_domains(opts)
+    wez.emit('quick_domain.fuzzy_selector.opened', window, pane)
+    window:perform_action(
+      act.InputSelector({
+        action = wez.action_callback(function(inner_window, inner_pane, id, _)
+          if id then
+            inner_window:perform_action(
+              act.SplitHorizontal { domain = { DomainName = id } },
+              inner_pane
+            )
+            wez.emit('quick_domain.fuzzy_selector.selected', window, pane, id)
+          else
+            wez.emit('quick_domain.fuzzy_selector.canceled', window, pane)
+          end
+        end),
+        title = "Choose Domain",
+        description = "Select a host and press Enter = accept, Esc = cancel, / = filter",
+        fuzzy_description = opts.icons.hosts .. " " .. "Domains: ",
+        choices = choices,
+        fuzzy = true,
+      }),
+      pane
+    )
+  end)
+end
+
+local function all_true(tbl)
+  for _, value in pairs(tbl) do
+    if not value then
+      return false
+    end
+  end
+  return true
+end
+
+local function deep_setmetatable(user, default)
+  user = user or {}
+  for k, v in pairs(default) do
+    if type(v) == "table" then
+      user[k] = deep_setmetatable(user[k], v)
+    else
+      if user[k] == nil then
+        user[k] = v
+      end
+    end
+  end
+
+  return user
+end
+
 function pub.apply_to_config(config, user_settings)
-  local opts = setmetatable(user_settings or {}, { __index = default_settings })
+  local opts = deep_setmetatable(user_settings or {}, default_settings)
+
+  if not opts.auto.ssh_ignore then
+    config.ssh_domains = domains.compute_ssh_domains()
+  end
+
+  if not all_true(opts.auto.exec_ignore) then
+    config.exec_domains = domains.compute_exec_domains(opts)
+  end
+
+  local actions = {
+    attach = fuzzy_attach_tab(opts),
+    vsplit = fuzzy_attach_vsplit(opts),
+    hsplit = fuzzy_attach_hsplit(opts),
+  }
+
   for name, key in pairs(opts.keys) do
     if key.tbl ~= '' then
       config.key_tables = config.key_tables or {}
       config.key_tables[key.tbl] = config.key_tables[key.tbl] or {}
       table.insert(config.key_tables[key.tbl],
-        { key = key.key, mods = key.mods, action = fuzzy_attach_to_domain(opts, name) })
+        { key = key.key, mods = key.mods, action = actions[name] })
     else
       config.keys = config.keys or {}
-      table.insert(config.keys, { key = key.key, mods = key.mods, action = fuzzy_attach_to_domain(opts, name) })
+      table.insert(config.keys, { key = key.key, mods = key.mods, action = actions[name] })
     end
   end
 end

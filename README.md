@@ -9,7 +9,7 @@ A faster way to search and attach to domains in wezterm. Inspired by [smart_work
 #### Dependencies
 
 There are no package dependencies, but you need to configured your
-`.ssh/config` [Here](https://wezfurlong.org/wezterm/config/lua/wezterm/enumerate_ssh_hosts.html) or configure your ssh domains [Here](https://wezfurlong.org/wezterm/config/lua/SshDomain.html) to select ssh domains with this plugin.
+`.ssh/config` [Here](https://wezfurlong.org/wezterm/config/lua/wezterm/enumerate_ssh_hosts.html) to select ssh domains using auto-configuration with this plugin.
 
 ### 🚀 Install
 
@@ -61,6 +61,23 @@ domains.formatter = function(icon, name, label)
 end
 ```
 
+You can enable auto configuration of [ssh_domains]() and [exec_domains]() by disabling the ignore configurations
+
+```lua 
+{
+  keys = ...,
+  icons = ...,
+  auto = {
+    ssh_ignore = false,
+    exec_ignore = {
+      ssh = false,
+      docker = false,
+      kubernetes = false
+    },
+  }
+}
+```
+
 ### 🛠️ Defaults
 
 These are the current default setting the can be overridden on your `apply_to_config` function
@@ -79,6 +96,7 @@ These are the current default setting the can be overridden on your `apply_to_co
     },
     -- open domain in split pane 
     -- excludes remote domains
+    -- add remote domains as exec domain for split binds
     vsplit = {
       key  = 'v',
       mods = 'CTRL',
@@ -96,6 +114,7 @@ These are the current default setting the can be overridden on your `apply_to_co
     ssh = '󰣀',
     tls = '󰢭',
     unix = '',
+    exec = '',
     bash = '',
     zsh = '',
     fish = '',
@@ -105,7 +124,21 @@ These are the current default setting the can be overridden on your `apply_to_co
     windows = '',
     docker = '',
     kubernetes = '󱃾',
-  }
+  },
+  -- auto-configuration
+  auto = {
+    -- disable ssh multiplex auto config
+    ssh_ignore = true,
+    -- disable exec domain auto configs
+    exec_ignore = {
+      ssh = true,
+      docker = true,
+      kubernetes = true
+    },
+  },
+  -- default shells
+  docker_shell = '/bin/bash',
+  kubernetes_shell = '/bin/bash'
 }
 ```
 
@@ -124,7 +157,6 @@ end
 |:----------|:------------|
 | window    | MuxWindow Object |
 | pane      | MuxPane Object   |
-| action    | Key name that triggered event |
 
 `quick_domain.fuzzy_selector.selected`
 
@@ -132,7 +164,6 @@ end
 |:----------|:------------|
 | window    | MuxWindow Object |
 | pane      | MuxPane Object   |
-| action    | Key name that triggered event |
 | id        | Domain ID |
 
 `quick_domain.fuzzy_selector.canceled`
@@ -141,4 +172,3 @@ end
 |:----------|:------------|
 | window    | MuxWindow Object |
 | pane      | MuxPane Object   |
-| action    | Key name that triggered event |
