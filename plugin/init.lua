@@ -1,11 +1,32 @@
 local wez = require "wezterm"
 
-local is_windows = wez.target_triple == 'x86_64-pc-windows-msvc'
-local separator = is_windows and '\\' or '/'
-local plugin_dir = wez.config_dir .. separator .. 'plugins'
-package.path = package.path .. ';' .. plugin_dir .. separator .. '?' .. separator .. '?.lua'
+local separator = package.config:sub(1, 1) == "\\" and "\\" or "/"
+local plugin_dir = wez.plugin.list()[1].plugin_dir:gsub(separator .. "[^" .. separator .. "]*$", "")
 
-local domains = require 'domains.init'
+--- Checks if the plugin directory exists
+local function directory_exists(path)
+  local success, result = pcall(wez.read_dir, plugin_dir .. path)
+  return success and result
+end
+
+--- Returns the name of the package, used when requiring modules
+local function get_require_path()
+  local path = "httpssCssZssZsgithubsDscomsZsDavidRR-FsZsquick_domainssDswezterm"
+  local path_trailing_slash = "httpssCssZssZsgithubsDscomsZsDavidRR-FsZsquick_domainssDsweztermsZs"
+  return directory_exists(path_trailing_slash) and path_trailing_slash or path
+end
+
+package.path = package.path
+    .. ";"
+    .. plugin_dir
+    .. separator
+    .. get_require_path()
+    .. separator
+    .. "plugin"
+    .. separator
+    .. "?.lua"
+
+local domains = require 'utils.domains'
 local act = wez.action
 
 local pub = {
