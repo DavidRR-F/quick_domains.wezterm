@@ -3,9 +3,12 @@ local wez = require "wezterm"
 -- Check if it's running on Windows and adjust path separator
 local is_windows = wez.target_triple == 'x86_64-pc-windows-msvc'
 local separator = is_windows and '\\' or '/'
-local current_file = debug.getinfo(1, 'S').source:sub(2)
-local plugin_dir = current_file:match('(.*' .. separator .. ')')
-package.path = package.path .. ';' .. plugin_dir .. '?.lua'
+
+-- Get the plugin directory path (assuming the current script is in the same directory as the other files)
+local plugin_dir = wez.config_dir .. separator .. 'plugins'
+
+-- Add the plugin directory to package.path so that Lua can find sibling files
+package.path = package.path .. ';' .. plugin_dir .. separator .. '?' .. separator .. '?.lua'
 
 local domains = require 'domains'
 local act = wez.action
