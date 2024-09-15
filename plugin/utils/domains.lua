@@ -22,37 +22,26 @@ local is_windows = package.config:sub(1, 1) == '\\'
 
 local function windows_cmd(command)
   local windows_cmd = { "cmd", "/c" }
-  for _, arg in ipairs(command) do 
+  for _, arg in ipairs(command) do
     table.insert(windows_cmd, arg)
   end
   return windows_cmd
 end
 
-local function shell(name)
+local function installed(name)
   local command
-  if is_windows then 
+  if is_windows then
     command = { "where", name }
-  else 
+  else
     command = { "which", name }
   end
 
   local success, _, stderr = wez.run_child_process(command)
 
-  if is_windows then 
-    return success and not stderr:find("INFO: Could not find files")
-  end 
-
-  return success
-end
-
-local function tool_installed(tool)
-  local check_command = { tool, "--version" }
-
   if is_windows then
-    check_command = windows_cmd(check_command) 
+    return success and not stderr:find("INFO: Could not find files")
   end
 
-  local success, _, _ = wez.run_child_process(check_command)
   return success
 end
 
@@ -110,7 +99,7 @@ local function make_kubernetes_exec_func(name, opts)
       '--',
       opts.kubernetes_shell or '/bin/bash',
     }
-    if is_windows then 
+    if is_windows then
       wrapped = windows_cmd(wrapped)
       wez.log_info(wrapped)
     end
@@ -121,13 +110,19 @@ end
 
 local function docker_list()
   local container_list = {}
-  local _, stdout, _ = wez.run_child_process {
+  local success, stdout, stderr = wez.run_child_process {
     'docker',
     'container',
     'ls',
     '--format',
     '{{.ID}}:{{.Names}}',
   }
+
+  if not success then
+    wez.log_error("Failed to run 'kubectl': " .. (stderr or "unknown error"))
+    return container_list
+  end
+
   for _, line in ipairs(wez.split_by_newlines(stdout)) do
     local id, name = line:match '(.-):(.+)'
     if id and name then
@@ -152,7 +147,7 @@ local function make_docker_fixup_func(id, opts)
       id,
       opts.docker_shell or '/bin/bash',
     }
-    if is_windows then 
+    if is_windows then
       wrapped = windows_cmd(wrapped)
     end
     cmd.args = wrapped
@@ -173,7 +168,7 @@ end
 
 function M.compute_exec_domains(opts)
   local exec_domains = {}
-  if not opts.auto.exec_ignore.docker and tool_installed("docker") then
+  if not opts.auto.exec_ignore.docker and installed("docker") then
     for id, name in pairs(docker_list()) do
       table.insert(
         exec_domains,
@@ -185,8 +180,8 @@ function M.compute_exec_domains(opts)
       )
     end
   end
-  if not opts.auto.exec_ignore.kubernetes and tool_installed("kubectl") then
-    for id, name in pairs(kubernetes_pod_list()) do
+  if not opts.auto.exec_ignore.kubernetes and installed("kubectl") then
+    for _, name in pairs(kubernetes_pod_list()) do
       table.insert(
         exec_domains,
         wez.exec_domain(
@@ -210,8 +205,8 @@ function M.compute_exec_domains(opts)
   end
 
   if is_windows then
-    for _, name in ipairs(shells.windows) do 
-      if shell(name) then 
+    for _, name in ipairs(shells.windows) do
+      if installed(name) then
         table.insert(exec_domains,
           wez.exec_domain(
             name,
@@ -226,9 +221,9 @@ function M.compute_exec_domains(opts)
         )
       end
     end
-  else 
-    for _, name in ipairs(shells.linux) do 
-      if shell(name) then 
+  else
+    for _, name in ipairs(shells.linux) do
+      if installed(name) then
         table.insert(exec_domains,
           wez.exec_domain(
             name,
@@ -243,7 +238,6 @@ function M.compute_exec_domains(opts)
         )
       end
     end
-
   end
 
   return exec_domains
