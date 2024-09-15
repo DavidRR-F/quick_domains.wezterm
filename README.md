@@ -146,7 +146,9 @@ This is the current default formatter function that can be overridden
 
 ```lua 
 domains.formatter = function(icon, name, _)
-    return wezterm.format({ { Text = icon .. ' ' .. name } })
+    return wezterm.format({ 
+        { Text = icon .. ' ' .. string.lower(name) } 
+    })
 end
 ```
 ### 🔔 Events

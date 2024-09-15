@@ -31,7 +31,9 @@ local act = wez.action
 
 local pub = {
   formatter = function(icon, name, _)
-    return wez.format({ { Text = icon .. ' ' .. name } })
+    return wez.format({ 
+      { Text = icon .. ' ' .. string.lower(name) } 
+    })
   end,
 }
 
@@ -54,20 +56,20 @@ local default_settings = {
     },
   },
   icons = {
-    hosts = '',
+    mux = '',
+    wsl = '',
     ssh = '󰣀',
-    tls = '󰢭',
-    exec = '',
+    tls = '󰢭', 
     unix = '',
     bash = '',
     zsh = '',
     fish = '',
     pwsh = '󰨊',
-    powershell = '󰨊',
-    wsl = '',
-    windows = '',
+    powershell = '󰨊', 
+    cmd = '',
     docker = '',
     kubernetes = '󱃾',
+    exec = '',
   },
   auto = {
     ssh_ignore = true,
@@ -111,6 +113,7 @@ local function get_choices(domains, opts)
     local name = domain:name()
     local label = domain:label()
     local icon = ''
+    
     for domain_type, icon_key in pairs(opts.icons) do
       if contains_ignore_case(label, domain_type) then
         icon = icon_key
@@ -125,6 +128,7 @@ local function get_choices(domains, opts)
       })
     end
   end
+  
   return choices
 end
 
@@ -158,7 +162,7 @@ local function fuzzy_attach_tab(opts)
         end),
         title = "Choose Domain",
         description = "Select a host and press Enter = accept, Esc = cancel, / = filter",
-        fuzzy_description = opts.icons.hosts .. " " .. "Domains: ",
+        fuzzy_description = "Domains: ",
         choices = choices,
         fuzzy = true,
       }),
@@ -186,7 +190,7 @@ local function fuzzy_attach_vsplit(opts)
         end),
         title = "Choose Domain",
         description = "Select a host and press Enter = accept, Esc = cancel, / = filter",
-        fuzzy_description = opts.icons.hosts .. " " .. "Domains: ",
+        fuzzy_description = "Domains: ",
         choices = choices,
         fuzzy = true,
       }),
@@ -214,7 +218,7 @@ local function fuzzy_attach_hsplit(opts)
         end),
         title = "Choose Domain",
         description = "Select a host and press Enter = accept, Esc = cancel, / = filter",
-        fuzzy_description = opts.icons.hosts .. " " .. "Domains: ",
+        fuzzy_description = "Domains: ",
         choices = choices,
         fuzzy = true,
       }),

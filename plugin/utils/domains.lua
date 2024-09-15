@@ -4,6 +4,20 @@ local M = {}
 
 local wezterm = require 'wezterm'
 
+local shells = {
+  windows = {
+    "powershell",
+    "pwsh",
+    "cmd"
+  },
+  linux = {
+    "bash",
+    "zsh",
+    "fish",
+    "pwsh",
+  }
+}
+
 local is_windows = package.config:sub(1, 1) == '\\'
 
 local function windows_cmd(command)
@@ -12,6 +26,23 @@ local function windows_cmd(command)
     table.insert(windows_cmd, arg)
   end
   return windows_cmd
+end
+
+local function shell(name)
+  local command
+  if is_windows then 
+    command = { "where", name }
+  else 
+    command = { "which", name }
+  end
+
+  local success, _, stderr = wez.run_child_process(command)
+
+  if is_windows then 
+    return success and not stderr:find("INFO: Could not find files")
+  end 
+
+  return success
 end
 
 local function tool_installed(tool)
@@ -27,7 +58,7 @@ end
 
 local function make_ssh_label_func()
   return function(name)
-    return "ssh into " .. name
+    return "ssh: " .. name
   end
 end
 
@@ -65,7 +96,7 @@ end
 
 local function make_kubernetes_label_func()
   return function(name)
-    return 'kubernetes pod named ' .. name
+    return 'kubernetes: ' .. name
   end
 end
 
@@ -108,7 +139,7 @@ end
 
 local function make_docker_label_func()
   return function(name)
-    return 'docker container named ' .. name
+    return 'docker: ' .. name
   end
 end
 
@@ -177,6 +208,44 @@ function M.compute_exec_domains(opts)
       )
     end
   end
+
+  if is_windows then
+    for _, name in ipairs(shells.windows) do 
+      if shell(name) then 
+        table.insert(exec_domains,
+          wez.exec_domain(
+            name,
+            function(cmd)
+              cmd.args = { name .. '.exe' }
+              return cmd
+            end,
+            function(name)
+              return 'terminal: ' .. name
+            end
+          )
+        )
+      end
+    end
+  else 
+    for _, name in ipairs(shells.linux) do 
+      if shell(name) then 
+        table.insert(exec_domains,
+          wez.exec_domain(
+            name,
+            function(cmd)
+              cmd.args = { name }
+              return cmd
+            end,
+            function(name)
+              return 'terminal: ' .. name
+            end
+          )
+        )
+      end
+    end
+
+  end
+
   return exec_domains
 end
 
