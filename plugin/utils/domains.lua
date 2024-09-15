@@ -2,6 +2,28 @@ local wez = require 'wezterm'
 
 local M = {}
 
+local wezterm = require 'wezterm'
+
+local function tool_installed(tool)
+  local check_command
+
+  if wez.target_triple:find('windows') then
+    check_command = tool .. " --version > NUL 2>&1"
+  else
+    check_command = tool .. " --version > /dev/null 2>&1"
+  end
+  local status = os.execute(check_command)
+  return status == 0
+end
+
+-- Example usage
+if tool_installed("docker") then
+  wezterm.log_info("Docker is installed")
+else
+  wezterm.log_info("Docker is not installed")
+end
+
+
 local function kubernetes_pod_list()
   local pod_list = {}
   local success, stdout, stderr = wez.run_child_process {
@@ -114,7 +136,7 @@ end
 
 function M.compute_exec_domains(opts)
   local exec_domains = {}
-  if not opts.auto.exec_ignore.docker then
+  if not opts.auto.exec_ignore.docker and tool_installed("docker") then
     for id, name in pairs(docker_list()) do
       table.insert(
         exec_domains,
@@ -126,7 +148,7 @@ function M.compute_exec_domains(opts)
       )
     end
   end
-  if not opts.auto.exec_ignore.kubernetes then
+  if not opts.auto.exec_ignore.kubernetes and tool_installed("kubectl") then
     for id, name in pairs(kubernetes_pod_list()) do
       table.insert(
         exec_domains,
