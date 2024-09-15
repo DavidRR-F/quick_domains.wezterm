@@ -4,25 +4,39 @@ local M = {}
 
 local wezterm = require 'wezterm'
 
-local function tool_installed(tool)
-  local check_command
+local is_windows = package.config:sub(1, 1) == '\\'
 
-  if wez.target_triple:find('windows') then
-    check_command = tool .. " --version > NUL 2>&1"
-  else
-    check_command = tool .. " --version > /dev/null 2>&1"
+local function windows_cmd(command)
+  local windows_cmd = { "cmd", "/c" }
+  for _, arg in ipairs(command) do 
+    table.insert(windows_cmd, arg)
   end
-  local status = os.execute(check_command)
-  return status == 0
+  return windows_cmd
 end
 
--- Example usage
-if tool_installed("docker") then
-  wezterm.log_info("Docker is installed")
-else
-  wezterm.log_info("Docker is not installed")
+local function tool_installed(tool)
+  local check_command = { tool, "--version" }
+
+  if is_windows then
+    check_command = windows_cmd(check_command) 
+  end
+
+  local success, _, _ = wez.run_child_process(check_command)
+  return success
 end
 
+local function make_ssh_label_func()
+  return function(name)
+    return "ssh into " .. name
+  end
+end
+
+local function make_ssh_exec_func(host)
+  return function(cmd)
+    cmd.args = { "ssh", host }
+    return cmd
+  end
+end
 
 local function kubernetes_pod_list()
   local pod_list = {}
@@ -49,16 +63,8 @@ local function kubernetes_pod_list()
   return pod_list
 end
 
-local function make_kubernetes_label_func(id)
+local function make_kubernetes_label_func()
   return function(name)
-    local _, stdout, _ = wez.run_child_process {
-      'kubectl',
-      'get',
-      'pod',
-      name,
-      '--output',
-      'jsonpath={.status.phase}'
-    }
     return 'kubernetes pod named ' .. name
   end
 end
@@ -73,6 +79,10 @@ local function make_kubernetes_exec_func(name, opts)
       '--',
       opts.kubernetes_shell or '/bin/bash',
     }
+    if is_windows then 
+      wrapped = windows_cmd(wrapped)
+      wez.log_info(wrapped)
+    end
     cmd.args = wrapped
     return cmd
   end
@@ -96,15 +106,8 @@ local function docker_list()
   return container_list
 end
 
-local function make_docker_label_func(id)
+local function make_docker_label_func()
   return function(name)
-    local _, stdout, _ = wez.run_child_process {
-      'docker',
-      'inspect',
-      '--format',
-      '{{.State.Running}}',
-      id,
-    }
     return 'docker container named ' .. name
   end
 end
@@ -118,6 +121,9 @@ local function make_docker_fixup_func(id, opts)
       id,
       opts.docker_shell or '/bin/bash',
     }
+    if is_windows then 
+      wrapped = windows_cmd(wrapped)
+    end
     cmd.args = wrapped
     return cmd
   end
@@ -127,7 +133,7 @@ function M.compute_ssh_domains()
   local ssh_domains = {}
   for host, _ in pairs(wez.enumerate_ssh_hosts()) do
     table.insert(ssh_domains, {
-      name = host,
+      name = host .. " (ssh domain)",
       remote_address = host,
     })
   end
@@ -141,9 +147,9 @@ function M.compute_exec_domains(opts)
       table.insert(
         exec_domains,
         wez.exec_domain(
-          'docker:' .. name,
+          name,
           make_docker_fixup_func(id, opts),
-          make_docker_label_func(id)
+          make_docker_label_func()
         )
       )
     end
@@ -153,9 +159,9 @@ function M.compute_exec_domains(opts)
       table.insert(
         exec_domains,
         wez.exec_domain(
-          'kubernetes:' .. name,
+          name,
           make_kubernetes_exec_func(name, opts),
-          make_kubernetes_label_func(id)
+          make_kubernetes_label_func()
         )
       )
     end
@@ -164,11 +170,9 @@ function M.compute_exec_domains(opts)
     for host, _ in pairs(wez.enumerate_ssh_hosts()) do
       table.insert(exec_domains,
         wez.exec_domain(
-          "ssh:" .. host,
-          function(cmd)
-            cmd.args = { "ssh", host }
-            return cmd
-          end
+          host,
+          make_ssh_exec_func(host),
+          make_ssh_label_func()
         )
       )
     end
