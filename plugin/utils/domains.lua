@@ -219,6 +219,18 @@ function M.compute_exec_domains(opts)
             end
           )
         )
+        table.insert(exec_domains,
+          wez.exec_domain(
+            name .. ' (admin)',
+            function(cmd)
+              cmd.args = { 'powershell.exe', '-NoLogo', 'Start-Process', '-Verb', 'runAs', 'wt', name .. '.exe' }
+              return cmd
+            end,
+            function(name)
+              return 'terminal as admin: ' .. name
+            end
+          )
+        )
       end
     end
   else

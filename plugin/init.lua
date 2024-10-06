@@ -31,8 +31,8 @@ local act = wez.action
 
 local pub = {
   formatter = function(icon, name, _)
-    return wez.format({ 
-      { Text = icon .. ' ' .. string.lower(name) } 
+    return wez.format({
+      { Text = icon .. ' ' .. string.lower(name) }
     })
   end,
 }
@@ -54,18 +54,23 @@ local default_settings = {
       key = 'h',
       tbl = '',
     },
+    window = {
+      mods = 'CTRL',
+      key = 'w',
+      tbl = '',
+    },
   },
   icons = {
     mux = '',
     wsl = '',
     ssh = '󰣀',
-    tls = '󰢭', 
+    tls = '󰢭',
     unix = '',
     bash = '',
     zsh = '',
     fish = '',
     pwsh = '󰨊',
-    powershell = '󰨊', 
+    powershell = '󰨊',
     cmd = '',
     docker = '',
     kubernetes = '󱃾',
@@ -87,9 +92,8 @@ local function contains_ignore_case(str, pattern)
   return string.find(string.lower(str), string.lower(pattern)) ~= nil
 end
 
-local function is_remote_domain(domain)
-  local remote_domains = { 'ssh mux', 'tls mux', 'unix mux' }
-  for _, domain_type in ipairs(remote_domains) do
+local function filter(domain, filters)
+  for _, domain_type in ipairs(filters) do
     if contains_ignore_case(domain:label(), domain_type) then
       return true
     end
@@ -97,10 +101,10 @@ local function is_remote_domain(domain)
   return false
 end
 
-local function filter_remote_domains(domains)
+local function filter_domains(domains, filters)
   local filtered = {}
   for _, domain in ipairs(domains) do
-    if not is_remote_domain(domain) then
+    if not filter(domain, filters) then
       table.insert(filtered, domain)
     end
   end
@@ -113,7 +117,7 @@ local function get_choices(domains, opts)
     local name = domain:name()
     local label = domain:label()
     local icon = ''
-    
+
     for domain_type, icon_key in pairs(opts.icons) do
       if contains_ignore_case(label, domain_type) then
         icon = icon_key
@@ -128,24 +132,51 @@ local function get_choices(domains, opts)
       })
     end
   end
-  
+
   return choices
 end
 
-local function get_local_domains(opts)
+local function get_domains(opts, filters)
+  filters = filters or {}
   local all_domains = wez.mux.all_domains()
-  all_domains = filter_remote_domains(all_domains)
+  if #filters > 0 then
+    return get_choices(all_domains, opts)
+  end
+  all_domains = filter_domains(all_domains)
   return get_choices(all_domains, opts)
 end
 
-local function get_all_domains(opts)
-  local all_domains = wez.mux.all_domains()
-  return get_choices(all_domains, opts)
+local function fuzzy_attach_window(opts)
+  return wez.action_callback(function(window, pane)
+    local choices = get_domains(opts)
+    wez.emit('quick_domain.fuzzy_selector.opened', window, pane)
+    window:perform_action(
+      act.InputSelector({
+        action = wez.action_callback(function(inner_window, inner_pane, id, _)
+          if id then
+            inner_window:perform_action(
+              act.SpawnCommandInNewWindow { domain = { DomainName = id } },
+              inner_pane
+            )
+            wez.emit('quick_domain.fuzzy_selector.selected', window, pane, id)
+          else
+            wez.emit('quick_domain.fuzzy_selector.canceled', window, pane)
+          end
+        end),
+        title = "Choose Domain",
+        description = "Select a host and press Enter = accept, Esc = cancel, / = filter",
+        fuzzy_description = "Domains: ",
+        choices = choices,
+        fuzzy = true,
+      }),
+      pane
+    )
+  end)
 end
 
 local function fuzzy_attach_tab(opts)
   return wez.action_callback(function(window, pane)
-    local choices = get_all_domains(opts)
+    local choices = get_domains(opts, { 'admin' })
     wez.emit('quick_domain.fuzzy_selector.opened', window, pane)
     window:perform_action(
       act.InputSelector({
@@ -173,7 +204,7 @@ end
 
 local function fuzzy_attach_vsplit(opts)
   return wez.action_callback(function(window, pane)
-    local choices = get_local_domains(opts)
+    local choices = get_domains(opts, { 'ssh mux', 'tls mux', 'unix mux', 'admin' })
     wez.emit('quick_domain.fuzzy_selector.opened', window, pane)
     window:perform_action(
       act.InputSelector({
@@ -201,7 +232,7 @@ end
 
 local function fuzzy_attach_hsplit(opts)
   return wez.action_callback(function(window, pane)
-    local choices = get_local_domains(opts)
+    local choices = get_domains(opts, { 'ssh mux', 'tls mux', 'unix mux', 'admin' })
     wez.emit('quick_domain.fuzzy_selector.opened', window, pane)
     window:perform_action(
       act.InputSelector({
@@ -266,6 +297,7 @@ function pub.apply_to_config(config, user_settings)
     attach = fuzzy_attach_tab(opts),
     vsplit = fuzzy_attach_vsplit(opts),
     hsplit = fuzzy_attach_hsplit(opts),
+    window = fuzzy_attach_window(opts),
   }
 
   for name, key in pairs(opts.keys) do
