@@ -39,9 +39,14 @@ local pub = {
 
 local default_settings = {
   keys = {
-    attach = {
+    tab = {
       mods = 'CTRL',
-      key = 'd',
+      key = 't',
+      tbl = '',
+    },
+    window = {
+      mods = 'CTRL',
+      key = 'w',
       tbl = '',
     },
     vsplit = {
@@ -141,6 +146,34 @@ end
 local function get_all_domains(opts)
   local all_domains = wez.mux.all_domains()
   return get_choices(all_domains, opts)
+end
+
+local function fuzzy_attach_window(opts)
+  return wez.action_callback(function(window, pane)
+    local choices = get_all_domains(opts)
+    wez.emit('quick_domain.fuzzy_selector.opened', window, pane)
+    window:perform_action(
+      act.InputSelector({
+        action = wez.action_callback(function(inner_window, inner_pane, id, _)
+          if id then
+            inner_window:perform_action(
+              act.SpawnCommandInNewWindow { domain = { DomainName = id } },
+              inner_pane
+            )
+            wez.emit('quick_domain.fuzzy_selector.selected', window, pane, id)
+          else
+            wez.emit('quick_domain.fuzzy_selector.canceled', window, pane)
+          end
+        end),
+        title = "Choose Domain",
+        description = "Select a host and press Enter = accept, Esc = cancel, / = filter",
+        fuzzy_description = "Domains: ",
+        choices = choices,
+        fuzzy = true,
+      }),
+      pane
+    )
+  end)
 end
 
 local function fuzzy_attach_tab(opts)
@@ -263,9 +296,10 @@ function pub.apply_to_config(config, user_settings)
   end
 
   local actions = {
-    attach = fuzzy_attach_tab(opts),
+    tab = fuzzy_attach_tab(opts),
+    window = fuzzy_attach_window(opts),
     vsplit = fuzzy_attach_vsplit(opts),
-    hsplit = fuzzy_attach_hsplit(opts),
+    hsplit = fuzzy_attach_hsplit(opts)
   }
 
   for name, key in pairs(opts.keys) do
