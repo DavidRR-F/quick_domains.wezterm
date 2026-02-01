@@ -1,3 +1,5 @@
+> DEPRECATED: In favor of [smart_ssh.wezterm](https://github.com/DavidRR-F/smart_ssh.wezterm/tree/main) no addtion features will be added
+
 # ⚡ Quick Domains
 
 A faster way to search and attach to domains in wezterm. Inspired by [smart_workpace_switcher.wezterm](https://github.com/MLFlexer/smart_workspace_switcher.wezterm)
